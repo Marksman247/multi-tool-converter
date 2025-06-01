@@ -1,4 +1,8 @@
 import streamlit as st
+from pint import UnitRegistry
+
+# Initialize Pint unit registry
+ureg = UnitRegistry()
 
 # Set page config
 st.set_page_config(page_title="🚀 Multi-Tool Converter", layout="centered")
@@ -55,7 +59,7 @@ if st.button("🔄 Reset"):
 # Select converter type
 option = st.sidebar.radio("Select Converter", ["Currency", "Unit", "Temperature"])
 
-# Currency converter
+# Currency converter (keep your working code or replace dummy with actual forex-python later)
 if option == "Currency":
     st.subheader("💱 Currency Converter")
     amount = st.text_input("Amount", placeholder="Enter amount")
@@ -72,24 +76,25 @@ if option == "Currency":
             except:
                 st.error("Invalid input. Enter a numeric value.")
 
-# Unit converter
+# Unit converter with Pint
 elif option == "Unit":
     st.subheader("📏 Unit Converter")
     value = st.text_input("Value", placeholder="Enter value")
-    from_unit = st.selectbox("From Unit", ["meters", "kilometers", "miles"])
-    to_unit = st.selectbox("To Unit", ["meters", "kilometers", "miles"])
+    from_unit = st.selectbox("From Unit", ["meter", "kilometer", "mile"])
+    to_unit = st.selectbox("To Unit", ["meter", "kilometer", "mile"])
 
     if st.button("Convert Unit"):
         if not value:
             st.warning("Please enter a value.")
         else:
             try:
-                result = round(float(value) * 3, 2)  # Dummy multiply by 3
-                st.success(f"{value} {from_unit} = {result} {to_unit}")
-            except:
-                st.error("Invalid input. Enter a numeric value.")
+                quantity = float(value) * ureg(from_unit)
+                result = quantity.to(to_unit)
+                st.success(f"{value} {from_unit} = {result:.2f}")
+            except Exception as e:
+                st.error(f"Conversion error: {e}")
 
-# Temperature converter
+# Temperature converter with formulas
 elif option == "Temperature":
     st.subheader("🌡️ Temperature Converter")
     temp_value = st.text_input("Value", placeholder="Enter temperature")
@@ -101,14 +106,29 @@ elif option == "Temperature":
             st.warning("Please enter a value.")
         else:
             try:
-                result = round(float(temp_value) + 10, 2)  # Dummy +10
-                st.success(f"{temp_value}° {from_temp} = {result}° {to_temp}")
-            except:
-                st.error("Invalid input. Enter a numeric value.")
+                temp = float(temp_value)
+
+                if from_temp == to_temp:
+                    result = temp
+                elif from_temp == "Celsius" and to_temp == "Fahrenheit":
+                    result = (temp * 9/5) + 32
+                elif from_temp == "Celsius" and to_temp == "Kelvin":
+                    result = temp + 273.15
+                elif from_temp == "Fahrenheit" and to_temp == "Celsius":
+                    result = (temp - 32) * 5/9
+                elif from_temp == "Fahrenheit" and to_temp == "Kelvin":
+                    result = (temp - 32) * 5/9 + 273.15
+                elif from_temp == "Kelvin" and to_temp == "Celsius":
+                    result = temp - 273.15
+                elif from_temp == "Kelvin" and to_temp == "Fahrenheit":
+                    result = (temp - 273.15) * 9/5 + 32
+
+                st.success(f"{temp_value}° {from_temp} = {round(result, 2)}° {to_temp}")
+            except Exception as e:
+                st.error(f"Conversion error: {e}")
 
 # Footer
 st.markdown("""
 <hr>
 <center style='color: gray;'>Built with ❤️ using Streamlit</center>
 """, unsafe_allow_html=True)
-
