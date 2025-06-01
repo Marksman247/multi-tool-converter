@@ -53,10 +53,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Reset button in sidebar
-if st.sidebar.button("🔄 Reset"):
-    st.rerun()
-
 # Converter selection sidebar
 option = st.sidebar.radio("Select Converter", ["Currency", "Unit", "Temperature"])
 
