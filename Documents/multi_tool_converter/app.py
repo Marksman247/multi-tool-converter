@@ -1,5 +1,5 @@
 import streamlit as st
-from forex_python.converter import CurrencyRates
+import requests
 from pint import UnitRegistry
 
 # Initialize unit registry
@@ -53,14 +53,14 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Reset button logic
-if st.button("🔄 Reset"):
-    st.experimental_rerun()
+# Reset button in sidebar
+if st.sidebar.button("🔄 Reset"):
+    st.rerun()
 
 # Converter selection sidebar
 option = st.sidebar.radio("Select Converter", ["Currency", "Unit", "Temperature"])
 
-# Currency converter
+# Currency converter using ExchangeRate-API
 if option == "Currency":
     st.subheader("💱 Currency Converter")
     amount = st.text_input("Amount", placeholder="Enter amount")
@@ -73,10 +73,17 @@ if option == "Currency":
         else:
             try:
                 amount_float = float(amount)
-                c = CurrencyRates()
-                rate = c.get_rate(from_currency, to_currency)
-                result = round(amount_float * rate, 4)
-                st.success(f"{amount_float} {from_currency} = {result} {to_currency}")
+                api_key = "541335f3500f4529dc48dca9"
+                url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{from_currency}"
+                response = requests.get(url)
+                data = response.json()
+
+                if data['result'] == 'success':
+                    rate = data['conversion_rates'][to_currency]
+                    result = round(amount_float * rate, 4)
+                    st.success(f"{amount_float} {from_currency} = {result} {to_currency}")
+                else:
+                    st.error("API error: unable to fetch rates.")
             except Exception as e:
                 st.error(f"Conversion error: {e}")
 
@@ -107,7 +114,6 @@ elif option == "Temperature":
     to_temp = st.selectbox("To", ["Celsius", "Fahrenheit", "Kelvin"])
 
     def convert_temperature(value, from_unit, to_unit):
-        # Convert input to Celsius first
         if from_unit == "Celsius":
             celsius = value
         elif from_unit == "Fahrenheit":
@@ -117,7 +123,6 @@ elif option == "Temperature":
         else:
             raise ValueError("Unsupported temperature unit")
 
-        # Convert from Celsius to target
         if to_unit == "Celsius":
             return celsius
         elif to_unit == "Fahrenheit":

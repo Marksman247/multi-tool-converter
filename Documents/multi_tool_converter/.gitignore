@@ -1,16 +1,31 @@
-# Byte-compiled / optimized / DLL files
+# Ignore system files and app cache
+*.pyc
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environment
-venv/
-env/
-
-# IDEs and editors
 .vscode/
-.idea/
+.env
+.venv/
+*.log
+*.DS_Store
+*.sqlite3
+.cache/
+.streamlit/
+*.drawio
+*.png
 
-# OS files
-.DS_Store
-Thumbs.db
+# Windows system/user folders
+/3D Objects/
+/AppData/
+/Contacts/
+/Desktop/
+/Documents/
+/Downloads/
+/Favorites/
+/Links/
+/Music/
+/OneDrive/
+/Pictures/
+/Saved Games/
+/Searches/
+/Videos/
+NTUSER.*
+*.lnk

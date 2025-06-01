@@ -1,20 +1,20 @@
-import requests
+from forex_python.converter import CurrencyRates
 
-API_KEY = "541335f3500f4529dc48dca9"
+c = CurrencyRates()
 
-currencies = ["USD", "EUR", "NGN", "GBP", "JPY", "AUD"]
+if option == "Currency":
+    st.subheader("💱 Currency Converter")
+    amount = st.text_input("Amount", placeholder="Enter amount")
+    from_currency = st.selectbox("From Currency", ["USD", "EUR", "NGN", "GBP"])
+    to_currency = st.selectbox("To Currency", ["USD", "EUR", "NGN", "GBP"])
 
-def convert_currency(amount, from_cur, to_cur):
-    url = f"https://v6.exchangerate-api.com/v6/{API_KEY}/latest/{from_cur}"
-    resp = requests.get(url)
-    data = resp.json()
-
-    if data.get("result") != "success":
-        raise Exception(data.get("error-type", "Failed to fetch rates"))
-
-    rates = data.get("conversion_rates", {})
-    if to_cur not in rates:
-        raise Exception(f"Unsupported currency: {to_cur}")
-
-    converted = amount * rates[to_cur]
-    return converted
+    if st.button("Convert Currency"):
+        if not amount:
+            st.warning("Please enter an amount.")
+        else:
+            try:
+                result = c.convert(from_currency, to_currency, float(amount))
+                result = round(result, 2)
+                st.success(f"{amount} {from_currency} = {result} {to_currency}")
+            except Exception as e:
+                st.error(f"Error: {e}")
