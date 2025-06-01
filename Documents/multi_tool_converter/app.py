@@ -1,15 +1,29 @@
 import streamlit as st
-from forex_python.converter import CurrencyRates
+import requests
 from pint import UnitRegistry
 
-# Initialize
-c = CurrencyRates()
+# Initialize Unit Registry for unit conversions
 ureg = UnitRegistry()
 
-# Set page config
+# ExchangeRate-API config
+API_KEY = "541335f3500f4529dc48dca9"
+BASE_URL = f"https://v6.exchangerate-api.com/v6/{API_KEY}/latest/"
+
+def get_exchange_rate(from_currency: str, to_currency: str) -> float | None:
+    try:
+        response = requests.get(BASE_URL + from_currency)
+        data = response.json()
+        if data['result'] == 'success':
+            rates = data['conversion_rates']
+            return rates.get(to_currency)
+        else:
+            return None
+    except Exception:
+        return None
+
+# Streamlit page config and CSS
 st.set_page_config(page_title="🚀 Multi-Tool Converter", layout="centered")
 
-# Custom CSS
 st.markdown("""
     <style>
         .main-header {
@@ -54,16 +68,17 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Reset button
+# Reset button (reruns the app)
 if st.button("🔄 Reset"):
     st.experimental_rerun()
 
-# Select converter type
+# Sidebar selection
 option = st.sidebar.radio("Select Converter", ["Currency", "Unit", "Temperature"])
 
+# Currency Converter
 if option == "Currency":
     st.subheader("💱 Currency Converter")
-    amount = st.text_input("Amount", placeholder="Enter amount")
+    amount = st.text_input("Amount", placeholder="Enter amount", key="currency_amount")
     from_currency = st.selectbox("From Currency", ["USD", "EUR", "NGN", "GBP"])
     to_currency = st.selectbox("To Currency", ["USD", "EUR", "NGN", "GBP"])
 
@@ -72,16 +87,20 @@ if option == "Currency":
             st.warning("Please enter an amount.")
         else:
             try:
-                amount_float = float(amount)
-                rate = c.get_rate(from_currency, to_currency)
-                result = round(amount_float * rate, 2)
-                st.success(f"{amount} {from_currency} = {result} {to_currency}")
-            except Exception as e:
-                st.error(f"Conversion error: {e}")
+                rate = get_exchange_rate(from_currency, to_currency)
+                if rate:
+                    result = round(float(amount) * rate, 2)
+                    st.success(f"{amount} {from_currency} = {result} {to_currency}")
+                    st.info(f"Exchange Rate: 1 {from_currency} = {rate} {to_currency}")
+                else:
+                    st.error("Conversion error: Could not fetch currency rates.")
+            except ValueError:
+                st.error("Invalid input. Enter a numeric value.")
 
+# Unit Converter
 elif option == "Unit":
     st.subheader("📏 Unit Converter")
-    value = st.text_input("Value", placeholder="Enter value")
+    value = st.text_input("Value", placeholder="Enter value", key="unit_value")
     from_unit = st.selectbox("From Unit", ["meters", "kilometers", "miles"])
     to_unit = st.selectbox("To Unit", ["meters", "kilometers", "miles"])
 
@@ -90,43 +109,48 @@ elif option == "Unit":
             st.warning("Please enter a value.")
         else:
             try:
-                quantity = float(value) * ureg(from_unit)
-                result = quantity.to(to_unit).magnitude
+                qty = float(value) * ureg(from_unit)
+                result = qty.to(to_unit).magnitude
                 st.success(f"{value} {from_unit} = {round(result, 4)} {to_unit}")
             except Exception as e:
-                st.error(f"Conversion error: {e}")
+                st.error(f"Conversion error: {str(e)}")
 
+# Temperature Converter
 elif option == "Temperature":
     st.subheader("🌡️ Temperature Converter")
-    temp_value = st.text_input("Value", placeholder="Enter temperature")
+    temp_value = st.text_input("Value", placeholder="Enter temperature", key="temp_value")
     from_temp = st.selectbox("From", ["Celsius", "Fahrenheit", "Kelvin"])
     to_temp = st.selectbox("To", ["Celsius", "Fahrenheit", "Kelvin"])
 
+    def convert_temperature(value, from_scale, to_scale):
+        # Convert input value to Celsius first
+        if from_scale == to_scale:
+            return value
+        if from_scale == "Celsius":
+            celsius = value
+        elif from_scale == "Fahrenheit":
+            celsius = (value - 32) * 5/9
+        elif from_scale == "Kelvin":
+            celsius = value - 273.15
+
+        # Convert Celsius to target scale
+        if to_scale == "Celsius":
+            return celsius
+        elif to_scale == "Fahrenheit":
+            return (celsius * 9/5) + 32
+        elif to_scale == "Kelvin":
+            return celsius + 273.15
+
     if st.button("Convert Temperature"):
         if not temp_value:
-            st.warning("Please enter a value.")
+            st.warning("Please enter a temperature value.")
         else:
             try:
-                val = float(temp_value)
-                # Convert to Celsius first
-                if from_temp == "Celsius":
-                    celsius = val
-                elif from_temp == "Fahrenheit":
-                    celsius = (val - 32) * 5/9
-                else:  # Kelvin
-                    celsius = val - 273.15
-
-                # Convert from Celsius to target
-                if to_temp == "Celsius":
-                    result = celsius
-                elif to_temp == "Fahrenheit":
-                    result = celsius * 9/5 + 32
-                else:  # Kelvin
-                    result = celsius + 273.15
-
-                st.success(f"{temp_value}° {from_temp} = {round(result, 2)}° {to_temp}")
-            except Exception as e:
-                st.error(f"Conversion error: {e}")
+                temp_val = float(temp_value)
+                result = convert_temperature(temp_val, from_temp, to_temp)
+                st.success(f"{temp_val}° {from_temp} = {round(result, 2)}° {to_temp}")
+            except ValueError:
+                st.error("Invalid input. Enter a numeric value.")
 
 # Footer
 st.markdown("""
